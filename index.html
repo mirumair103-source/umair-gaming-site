@@ -2,51 +2,45 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UMAIR GAMING</title>
-  <style>
-    body {
-      background: #101020;
-      color: white;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 30px 15px;
-    }
-    h1 {
-      color: #00ff99;
-      font-size: 32px;
-    }
-    .game {
-      background: #242440;
-      padding: 20px;
-      margin: 20px auto;
-      max-width: 320px;
-      border-radius: 15px;
-    }
-    button {
-      background: #00ff99;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UMAIR GAMING</title>
+<style>
+body{margin:0;background:#101020;color:white;font-family:Arial;text-align:center}
+header{background:#7000ff;padding:25px 10px}
+.card{background:#20203a;margin:20px auto;padding:20px;max-width:400px;border-radius:15px}
+button{background:#00e5ff;color:#101020;border:0;border-radius:8px;padding:12px;margin:5px;font-weight:bold}
+#road{width:200px;height:300px;background:#444;margin:15px auto;position:relative;border-left:5px dashed white;border-right:5px dashed white;overflow:hidden}
+#car{position:absolute;bottom:15px;left:80px;font-size:30px}
+#target{font-size:40px;cursor:pointer}
+</style>
 </head>
 <body>
-  <h1>🎮 UMAIR GAMING</h1>
-  <p>Welcome to my gaming world!</p>
-
-  <div class="game">
-    <h2>🏎️ Car Racing</h2>
-    <p>Racing games coming soon!</p>
-    <button onclick="alert('Welcome to UMAIR GAMING!')">
-      Play
-    </button>
-  </div>
-
-  <div class="game">
-    <h2>🎯 Action Games</h2>
-    <p>More games coming soon!</p>
-  </div>
+<header>
+<h1>🎮 UMAIR GAMING</h1>
+<p>Play • Race • Have Fun</p>
+</header>
+<div class="card">
+<h2>🏎️ Car Racing</h2>
+<p>Score: <span id="score">0</span></p>
+<div id="road"><div id="car">🏎️</div></div>
+<button onclick="move(-30)">⬅️ Left</button>
+<button onclick="move(30)">Right ➡️</button>
+<button onclick="start()">Start Race</button>
+<p id="status">Press Start Race!</p>
+</div>
+<div class="card">
+<h2>🎯 Mini Target Game</h2>
+<p>Tap the target!</p>
+<button onclick="hit()">🎯 Hit Target</button>
+<p>Score: <span id="hits">0</span></p>
+</div>
+<script>
+let x=80,score=0,timer;
+function move(n){x=Math.max(0,Math.min(160,x+n));document.getElementById('car').style.left=x+'px'}
+function start(){clearInterval(timer);score=0;document.getElementById('score').textContent=score;document.getElementById('status').textContent='Race started!';timer=setInterval(()=>{score++;document.getElementById('score').textContent=score},1000)}
+let hits=0;
+function hit(){hits++;document.getElementById('hits').textContent=hits}
+</script>
 </body>
 </html>
