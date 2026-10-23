@@ -6,41 +6,206 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UMAIR GAMING</title>
 <style>
+*{box-sizing:border-box}
 body{margin:0;background:#101020;color:white;font-family:Arial;text-align:center}
-header{background:#7000ff;padding:25px 10px}
-.card{background:#20203a;margin:20px auto;padding:20px;max-width:400px;border-radius:15px}
-button{background:#00e5ff;color:#101020;border:0;border-radius:8px;padding:12px;margin:5px;font-weight:bold}
-#road{width:200px;height:300px;background:#444;margin:15px auto;position:relative;border-left:5px dashed white;border-right:5px dashed white;overflow:hidden}
-#car{position:absolute;bottom:15px;left:80px;font-size:30px}
-#target{font-size:40px;cursor:pointer}
+header{padding:22px;background:#191932;color:#00ffff}
+h1{margin:5px}
+nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;padding:12px}
+button{background:#00caca;color:#071020;border:0;border-radius:8px;padding:12px;font-weight:bold;margin:4px;cursor:pointer}
+button:active{transform:scale(.96)}
+.game{display:none;padding:12px}
+.game.active{display:block}
+canvas{background:#080814;border:2px solid #00ffff;border-radius:8px;width:min(94vw,360px);height:auto;touch-action:none}
+#target{width:min(90vw,340px);height:280px;background:#17172c;border:2px solid #00ffff;margin:auto;position:relative;overflow:hidden}
+#dot{position:absolute;width:42px;height:42px;border-radius:50%;background:#ff416c;display:none}
+#snakeBoard{background:#080814}
+.controls{margin:8px}
 </style>
 </head>
 <body>
 <header>
 <h1>🎮 UMAIR GAMING</h1>
-<p>Play • Race • Have Fun</p>
+<p>Play five mini games on your phone!</p>
 </header>
-<div class="card">
+
+<nav>
+<button onclick="showGame('car')">🏎️ Racing</button>
+<button onclick="showGame('shoot')">🎯 Target</button>
+<button onclick="showGame('snake')">🐍 Snake</button>
+<button onclick="showGame('brick')">🧱 Bricks</button>
+<button onclick="showGame('jump')">🦘 Jump</button>
+</nav>
+
+<section id="car" class="game active">
 <h2>🏎️ Car Racing</h2>
-<p>Score: <span id="score">0</span></p>
-<div id="road"><div id="car">🏎️</div></div>
-<button onclick="move(-30)">⬅️ Left</button>
-<button onclick="move(30)">Right ➡️</button>
-<button onclick="start()">Start Race</button>
-<p id="status">Press Start Race!</p>
+<p>Score: <span id="carScore">0</span></p>
+<canvas id="carCanvas" width="320" height="420"></canvas>
+<div class="controls">
+<button onclick="carMove(-1)">⬅️ Left</button>
+<button onclick="carMove(1)">Right ➡️</button>
 </div>
-<div class="card">
-<h2>🎯 Mini Target Game</h2>
-<p>Tap the target!</p>
-<button onclick="hit()">🎯 Hit Target</button>
-<p>Score: <span id="hits">0</span></p>
+<button onclick="startCar()">Start / Restart</button>
+</section>
+
+<section id="shoot" class="game">
+<h2>🎯 Target Game</h2>
+<p>Score: <span id="shootScore">0</span></p>
+<div id="target"><button id="dot" onclick="hitTarget()">🎯</button></div>
+<button onclick="startShoot()">Start Game</button>
+</section>
+
+<section id="snake" class="game">
+<h2>🐍 Snake</h2>
+<p>Score: <span id="snakeScore">0</span></p>
+<canvas id="snakeBoard" width="320" height="320"></canvas>
+<div>
+<button onclick="setDir(0,-1)">⬆️</button><br>
+<button onclick="setDir(-1,0)">⬅️</button>
+<button onclick="setDir(0,1)">⬇️</button>
+<button onclick="setDir(1,0)">➡️</button>
 </div>
+<button onclick="startSnake()">Start / Restart</button>
+</section>
+
+<section id="brick" class="game">
+<h2>🧱 Brick Breaker</h2>
+<p>Move paddle with your finger.</p>
+<canvas id="brickCanvas" width="320" height="420"></canvas><br>
+<button onclick="startBrick()">Start / Restart</button>
+</section>
+
+<section id="jump" class="game">
+<h2>🦘 Jumping Game</h2>
+<p>Tap JUMP to avoid obstacles.</p>
+<canvas id="jumpCanvas" width="320" height="250"></canvas><br>
+<button onclick="jumpNow()">JUMP</button>
+<button onclick="startJump()">Start / Restart</button>
+<p>Score: <span id="jumpScore">0</span></p>
+</section>
+
 <script>
-let x=80,score=0,timer;
-function move(n){x=Math.max(0,Math.min(160,x+n));document.getElementById('car').style.left=x+'px'}
-function start(){clearInterval(timer);score=0;document.getElementById('score').textContent=score;document.getElementById('status').textContent='Race started!';timer=setInterval(()=>{score++;document.getElementById('score').textContent=score},1000)}
-let hits=0;
-function hit(){hits++;document.getElementById('hits').textContent=hits}
+let timers=[];
+function stopGames(){timers.forEach(clearInterval);timers=[]}
+function showGame(id){
+stopGames();
+document.querySelectorAll('.game').forEach(g=>g.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+}
+function loop(fn,ms){timers.push(setInterval(fn,ms))}
+function ctx(id){return document.getElementById(id).getContext('2d')}
+
+/* CAR RACING */
+let carX=140,traffic=[],carScore=0,carRunning=false;
+function carMove(d){carX=Math.max(10,Math.min(270,carX+d*25))}
+function startCar(){
+stopGames();carX=140;traffic=[];carScore=0;carRunning=true;
+document.getElementById('carScore').textContent=0;
+loop(()=>{
+if(!carRunning)return;
+let c=ctx('carCanvas');c.clearRect(0,0,320,420);
+c.fillStyle='#252540';c.fillRect(35,0,250,420);
+c.strokeStyle='white';c.setLineDash([20,18]);c.beginPath();c.moveTo(160,0);c.lineTo(160,420);c.stroke();c.setLineDash([]);
+if(Math.random()<.035)traffic.push({x:55+Math.floor(Math.random()*3)*70,y:-50});
+traffic.forEach(t=>t.y+=4);
+c.fillStyle='orange';
+traffic.forEach(t=>c.fillRect(t.x,t.y,32,48));
+c.fillStyle='#00ffff';c.fillRect(carX,350,32,48);
+if(traffic.some(t=>t.y>315&&t.y<395&&Math.abs(t.x-carX)<30)){carRunning=false;alert('Game Over! Score: '+carScore)}
+traffic=traffic.filter(t=>t.y<430);
+carScore++;document.getElementById('carScore').textContent=carScore;
+},40);
+}
+
+/* TARGET GAME */
+let shootScore=0,shootRunning=false;
+function startShoot(){
+stopGames();shootScore=0;shootRunning=true;
+document.getElementById('shootScore').textContent=0;
+document.getElementById('dot').style.display='block';
+moveTarget();
+loop(()=>{shootRunning=false;document.getElementById('dot').style.display='none';alert('Time up! Score: '+shootScore)},20000);
+}
+function moveTarget(){
+let t=document.getElementById('target'),d=document.getElementById('dot');
+d.style.left=Math.random()*(t.clientWidth-45)+'px';
+d.style.top=Math.random()*(t.clientHeight-45)+'px';
+}
+function hitTarget(){
+if(!shootRunning)return;
+shootScore++;document.getElementById('shootScore').textContent=shootScore;moveTarget();
+}
+
+/* SNAKE */
+let snake,food,dir,snakeRun=false;
+function setDir(x,y){if(dir&&(x===-dir.x&&y===-dir.y))return;dir={x,y}}
+function startSnake(){
+stopGames();snake=[{x:5,y:5},{x:4,y:5}];food={x:10,y:10};dir={x:1,y:0};snakeRun=true;
+let c=ctx('snakeBoard');
+loop(()=>{
+if(!snakeRun)return;
+let h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+if(h.x<0||h.x>=16||h.y<0||h.y>=16||snake.some(p=>p.x===h.x&&p.y===h.y)){snakeRun=false;alert('Game Over!');return}
+snake.unshift(h);
+if(h.x===food.x&&h.y===food.y){food={x:Math.floor(Math.random()*16),y:Math.floor(Math.random()*16)}}
+else snake.pop();
+c.clearRect(0,0,320,320);c.fillStyle='red';c.fillRect(food.x*20,food.y*20,18,18);
+c.fillStyle='#00ff99';snake.forEach(p=>c.fillRect(p.x*20,p.y*20,18,18));
+document.getElementById('snakeScore').textContent=snake.length-2;
+},180);
+}
+
+/* BRICK BREAKER */
+let bx=150,by=300,vx=2,vy=-3,paddle=120,bricks=[],brickRun=false;
+const bc=document.getElementById('brickCanvas');
+bc.addEventListener('pointermove',e=>{let r=bc.getBoundingClientRect();paddle=(e.clientX-r.left)*320/r.width-40});
+bc.addEventListener('pointerdown',e=>{let r=bc.getBoundingClientRect();paddle=(e.clientX-r.left)*320/r.width-40});
+function startBrick(){
+stopGames();bx=150;by=300;vx=2;vy=-3;paddle=120;brickRun=true;
+bricks=[];
+for(let r=0;r<4;r++)for(let col=0;col<7;col++)bricks.push({x:8+col*44,y:35+r*25,on:true});
+loop(()=>{
+if(!brickRun)return;
+let c=ctx('brickCanvas');c.clearRect(0,0,320,420);
+bricks.forEach(b=>{if(b.on){c.fillStyle='#'+['ff416c','ffd166','06d6a0','7b61ff'][Math.floor(b.y/25-1)%4];c.fillRect(b.x,b.y,38,16)}});
+c.fillStyle='#00ffff';c.fillRect(paddle,385,80,10);
+c.fillStyle='white';c.beginPath();c.arc(bx,by,7,0,Math.PI*2);c.fill();
+bx+=vx;by+=vy;
+if(bx<7||bx>313)vx=-vx;if(by<7)vy=-vy;
+if(by>375&&by<400&&bx>paddle&&bx<paddle+80)vy=-Math.abs(vy);
+bricks.forEach(b=>{if(b.on&&bx>b.x&&bx<b.x+38&&by>b.y&&by<b.y+16){b.on=false;vy=-vy}});
+if(by>420){brickRun=false;alert('Game Over! Press Start to retry')}
+if(bricks.every(b=>!b.on)){brickRun=false;alert('You Win!')}
+},20);
+}
+
+/* JUMPING GAME */
+let jy=180,jvy=0,obstacles=[],jumpRun=false,jScore=0;
+function jumpNow(){if(jumpRun&&jy>=180)jvy=-12}
+function startJump(){
+stopGames();jy=180;jvy=0;obstacles=[];jumpRun=true;jScore=0;
+document.getElementById('jumpScore').textContent=0;
+loop(()=>{
+if(!jumpRun)return;
+let c=ctx('jumpCanvas');c.clearRect(0,0,320,250);
+c.strokeStyle='white';c.beginPath();c.moveTo(0,220);c.lineTo(320,220);c.stroke();
+jvy+=.6;jy+=jvy;if(jy>180){jy=180;jvy=0}
+if(Math.random()<.035)obstacles.push({x:320,y:190});
+obstacles.forEach(o=>o.x-=4);
+c.fillStyle='#00ffff';c.fillRect(40,jy,25,40);
+c.fillStyle='#ff416c';obstacles.forEach(o=>c.fillRect(o.x,o.y,22,30));
+if(obstacles.some(o=>o.x<65&&o.x>25&&jy>150)){jumpRun=false;alert('Game Over! Score: '+jScore)}
+obstacles=obstacles.filter(o=>o.x>-30);
+jScore++;document.getElementById('jumpScore').textContent=jScore;
+},30);
+}
+document.addEventListener('keydown',e=>{
+if(e.key==='ArrowLeft')carMove(-1);
+if(e.key==='ArrowRight')carMove(1);
+if(e.key==='ArrowUp')setDir(0,-1);
+if(e.key==='ArrowDown')setDir(0,1);
+if(e.code==='Space')jumpNow();
+});
 </script>
 </body>
 </html>
+
